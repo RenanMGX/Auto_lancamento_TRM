@@ -1,1 +1,1 @@
-PROJECT_NAME:str = "Informe de Contas Contabeis Viradas"
+PROJECT_NAME:str = "Informe de Rendimento TRM"

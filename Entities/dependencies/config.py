@@ -12,13 +12,16 @@ except ImportError:
 class Config:
     @property
     def file_name(self) -> str:
-        return "config.init"
+        return self.__file_name
     
     @property
     def config(self):
         return self.__config
     
-    def __init__(self):
+    def __init__(self, file_name:str=os.path.join(os.getcwd(), "config.init")):
+        self.__file_name:str = file_name
+        if not os.path.dirname(self.file_name):
+            raise Exception(f"o caminho {os.path.dirname(self.file_name)} não é valido!")
         if not os.path.exists(self.file_name):
             with open(self.file_name, 'w')as _file:
                 _file.write("")
@@ -32,7 +35,7 @@ class Config:
                             self.config[str(key)][option] = str(value)
             self.__save()
             print(f"o arquivo '{self.file_name}' não existia então foi criado e o script sera encerrado!")
-            sys.exit()
+            #sys.exit()
         else:
             self.__config = configparser.ConfigParser()
             self.read()

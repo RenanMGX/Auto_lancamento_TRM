@@ -9,11 +9,10 @@
 
 
 from PyQt5 import QtCore, QtGui, QtWidgets
-
-
+from typing import Literal
 
 class Ui_Interface(QtWidgets.QMainWindow):
-    def __init__(self, version:str="Beta"):
+    def __init__(self, *, version:str="Beta"):
         self.__version:str = version
         
         super().__init__()
@@ -30,94 +29,128 @@ class Ui_Interface(QtWidgets.QMainWindow):
         self.Central.setObjectName("Central")
         
         self.Telas = QtWidgets.QStackedWidget(self.Central)
-        self.Telas.setGeometry(self.geometry())
+        self.Telas.setGeometry(5,5, self.width() -10, self.height() - 30)
         self.Telas.setObjectName("Telas")
         self.Telas.setFrameShape(QtWidgets.QFrame.Shape.Box)
         self.Telas.setFrameShadow(QtWidgets.QFrame.Shadow.Sunken)
                 
+        # self.Tela0 = QtWidgets.QWidget()
+        # self.Tela0.setObjectName("Tela0")
+        
+        #self.Telas.addWidget(self.Tela0)
+        
         self.Tela0 = QtWidgets.QWidget()
-        self.Tela0.setObjectName("Tela0")
+        self.Tela0.setObjectName("Tela1")
+
+        # linha 1
+        
+        self.Tela0_label_moviDiariaTitulo = QtWidgets.QLabel(self.Tela0)
+        self.Tela0_label_moviDiariaTitulo.setGeometry(QtCore.QRect(50,25,600,25))
+        self.Tela0_label_moviDiariaTitulo.setObjectName("Tela0_label_moviDiariaTitulo")
+        
+        
+        self.Tela0_bt_moviDiaria = QtWidgets.QToolButton(self.Tela0)
+        self.Tela0_bt_moviDiaria.setGeometry(QtCore.QRect(10,50,25,25))
+        self.Tela0_bt_moviDiaria.setObjectName("Tela0_bt_moviDiaria")
+        #self.Tela0_bt_moviDiaria.clicked.connect(self.procurar_file)
+        
+        self.Tela0_text_moviDiaria = QtWidgets.QLineEdit(self.Tela0)
+        self.Tela0_text_moviDiaria.setGeometry(QtCore.QRect(50,50,600,25))
+        self.Tela0_text_moviDiaria.setObjectName("Tela0_text_moviDiaria")
+        self.Tela0_text_moviDiaria.setReadOnly(True)
+        ##
+        
+        #linha 2
+        
+        self.Tela0_bt_iniciarNavegador = QtWidgets.QPushButton(self.Tela0)
+        self.Tela0_bt_iniciarNavegador.setGeometry(QtCore.QRect(10,425,100,25))
+        self.Tela0_bt_iniciarNavegador.setObjectName("Tela0_bt_iniciar")
+        
+        self.Tela0_bt_iniciarExtract = QtWidgets.QPushButton(self.Tela0)
+        self.Tela0_bt_iniciarExtract.setGeometry(QtCore.QRect(125,425,100,25))
+        self.Tela0_bt_iniciarExtract.setObjectName("Tela0_bt_iniciarExtract")
+        self.Tela0_bt_iniciarExtract.setVisible(False)
         
         self.Telas.addWidget(self.Tela0)
-        
-        self.Tela1 = QtWidgets.QWidget()
-        self.Tela1.setObjectName("Tela1")
-        
-        self.Tela1_text_movimentacaoDiaria = QtWidgets.QTextEdit(self.Tela1)
-        self.Tela1_text_movimentacaoDiaria.setGeometry(QtCore.QRect(150, 30, 131, 41))
-        self.Tela1_text_movimentacaoDiaria.setReadOnly(True)
-        self.Tela1_text_movimentacaoDiaria.setText("movimentacaoDiaria")
-        
-        self.pushButton = QtWidgets.QPushButton(self.Tela1)
-        self.pushButton.setGeometry(QtCore.QRect(1, 30, 131, 41))
-        self.pushButton.setObjectName("pushButton")
-        
-        self.label = QtWidgets.QLabel(self.Tela1)
-        self.label.setGeometry(QtCore.QRect(50, 100, 101, 41))
-        self.label.setObjectName("label")
-        
-        self.Telas.addWidget(self.Tela1)
-        self.Telas.setCurrentIndex(1)
+        self.Telas.setCurrentIndex(0)
         
         self.setCentralWidget(self.Central)
                 
-        self.menuBar = QtWidgets.QMenuBar(self)
-        self.menuBar.setGeometry(QtCore.QRect(0, 0, 794, 21))
-        self.menuBar.setObjectName("menuBar")
+        # self.menuBar = QtWidgets.QMenuBar(self)
+        # self.menuBar.setGeometry(QtCore.QRect(0, 0, 794, 21))
+        # self.menuBar.setObjectName("menuBar")
         
-        self.menuFile = QtWidgets.QMenu(self.menuBar)
-        self.menuFile.setObjectName("menuFile")
+        # self.menuFile = QtWidgets.QMenu(self.menuBar)
+        # self.menuFile.setObjectName("menuFile")
         
-        self.menuNew = QtWidgets.QMenu(self.menuFile)
-        self.menuNew.setObjectName("menuNew")
+        # self.menuNew = QtWidgets.QMenu(self.menuFile)
+        # self.menuNew.setObjectName("menuNew")
         
-        self.menuHelp = QtWidgets.QMenu(self.menuBar)
-        self.menuHelp.setObjectName("menuHelp")
+        # self.menuHelp = QtWidgets.QMenu(self.menuBar)
+        # self.menuHelp.setObjectName("menuHelp")
         
-        self.setMenuBar(self.menuBar)
+        # self.setMenuBar(self.menuBar)
         
-        self.actionQuit = QtWidgets.QAction(self)
-        self.actionQuit.setObjectName("actionQuit")
+        # self.actionQuit = QtWidgets.QAction(self)
+        # self.actionQuit.setObjectName("actionQuit")
         
-        self.actionFile = QtWidgets.QAction(self)
-        self.actionFile.setObjectName("actionFile")
+        # self.actionFile = QtWidgets.QAction(self)
+        # self.actionFile.setObjectName("actionFile")
         
-        self.actionAbout = QtWidgets.QAction(self)
-        self.actionAbout.setObjectName("actionAbout")
+        # self.actionAbout = QtWidgets.QAction(self)
+        # self.actionAbout.setObjectName("actionAbout")
         
-        self.menuNew.addSeparator()
-        self.menuNew.addAction(self.actionFile)
+        # self.menuNew.addSeparator()
+        # self.menuNew.addAction(self.actionFile)
         
-        self.menuFile.addAction(self.menuNew.menuAction())
-        self.menuFile.addSeparator()
-        self.menuFile.addAction(self.actionQuit)
+        # self.menuFile.addAction(self.menuNew.menuAction())
+        # self.menuFile.addSeparator()
+        # self.menuFile.addAction(self.actionQuit)
         
-        self.menuHelp.addAction(self.actionAbout)
+        # self.menuHelp.addAction(self.actionAbout)
         
-        self.menuBar.addAction(self.menuFile.menuAction())
-        self.menuBar.addAction(self.menuHelp.menuAction())
+        # self.menuBar.addAction(self.menuFile.menuAction())
+        # self.menuBar.addAction(self.menuHelp.menuAction())
 
         self.retranslateUi()
         QtCore.QMetaObject.connectSlotsByName(self)
         
-
-        
     def retranslateUi(self):
         _translate = QtCore.QCoreApplication.translate
         self.setWindowTitle(_translate("Interface", f"Informe de Rendimentos TRM | Versão: {self.__version}"))
-        self.pushButton.setText(_translate("Interface", "BT_Exemplo"))
-        self.label.setText(_translate("Interface", "Exemplo"))
-        self.menuFile.setTitle(_translate("Interface", "Arquivos"))
-        self.menuNew.setTitle(_translate("Interface", "New"))
-        self.menuHelp.setTitle(_translate("Interface", "Help"))
-        self.actionQuit.setText(_translate("Interface", "Quit"))
-        self.actionFile.setText(_translate("Interface", "File"))
-        self.actionAbout.setText(_translate("Interface", "About"))
+        self.Tela0_label_moviDiariaTitulo.setText(_translate("Interface", "Caminho da planilha da Movimentação Diaria:"))
+        self.Tela0_bt_moviDiaria.setText(_translate("Interface", "..."))
+        self.Tela0_text_moviDiaria.setText(_translate("Interface", "Vazio"))
+        self.Tela0_bt_iniciarNavegador.setText(_translate("Interface", "Abrir Navegador"))
+        self.Tela0_bt_iniciarExtract.setText(_translate("Interface", "Iniciar Extração"))
+        
+        # self.menuFile.setTitle(_translate("Interface", "Arquivos"))
+        # self.menuNew.setTitle(_translate("Interface", "New"))
+        # self.menuHelp.setTitle(_translate("Interface", "Help"))
+        # self.actionQuit.setText(_translate("Interface", "Quit"))
+        # self.actionFile.setText(_translate("Interface", "File"))
+        # self.actionAbout.setText(_translate("Interface", "About"))
+        
+    def procurar_file(self) -> str:
+        path = QtWidgets.QFileDialog.getOpenFileName()[0]
+        if path:
+            return path
+
+        raise Exception(f"'{path=} não encontrado")
+    
+    def alerta(self, title:Literal['Alerta', 'Error', 'Concluido'], description:str) -> None:
+        alert = QtWidgets.QMessageBox()
+        alert.setWindowTitle(title)
+        alert.setText(description)
+        alert.setIcon(QtWidgets.QMessageBox.Icon.Warning)
+        alert.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Ok)
+        alert.exec_()
 
 
 if __name__ == "__main__":
     import sys
     app = QtWidgets.QApplication(sys.argv)
+    
     ui = Ui_Interface()
     ui.show()
     sys.exit(app.exec_())
