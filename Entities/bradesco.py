@@ -18,9 +18,7 @@ class Bradesco:
             self.__nav
             self.__nav.close()
             del self.__nav
-        except AttributeError:
-            pass
-        except NameError:
+        except Exception:
             pass
         
         self.__nav:Navegador = Navegador(url=self.url, speak=self.nav_speak)

@@ -10,10 +10,11 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from typing import Literal
-
+    
 class Ui_Interface(QtWidgets.QMainWindow):
-    def __init__(self, *, version:str="Beta"):
+    def __init__(self, *, nav:object=object(), version:str="Beta"):
         self.__version:str = version
+        self.__nav = nav
         
         super().__init__()
         
@@ -145,6 +146,15 @@ class Ui_Interface(QtWidgets.QMainWindow):
         alert.setIcon(QtWidgets.QMessageBox.Icon.Warning)
         alert.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Ok)
         alert.exec_()
+    
+    def closeEvent(self, a0):
+        try:
+            self.__nav.exit() #type: ignore
+        except:
+            pass
+        if a0:
+            a0.accept()
+    
 
 
 if __name__ == "__main__":
