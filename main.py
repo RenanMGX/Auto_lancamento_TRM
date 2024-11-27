@@ -66,11 +66,11 @@ class Controller:
             return
         
         try:
-            self.bradesco.start_nav()
+            self.bradesco._start_nav()
             self.view.Tela0_bt_iniciarExtract.setVisible(True)
         except:
             print(traceback.format_exc())
-            self.bradesco.exit()
+            self.bradesco._exit()
             self.view.Tela0_bt_iniciarExtract.setVisible(False)
     
     @hide_show 
