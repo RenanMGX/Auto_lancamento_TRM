@@ -10,6 +10,7 @@ from typing import Literal, List, Dict
 import locale
 locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
 
+
 class Bradesco:
     @property
     def Nav(self) -> Navegador:
@@ -48,6 +49,7 @@ class Bradesco:
         }
         
         self.__current_codigo:str = ""
+        
 
     def _start_nav(self):
         try:
@@ -197,45 +199,159 @@ class Bradesco:
                 sleep(1)
         raise Exception("não foi possivel adiquirir a UL da agencia e conta")
     
-    def _select_agenciaConta(self, conta) -> bool:
-        ul = self._get_ul_agenciaConta()
-        self.Nav.find_element(By.ID, 'formEntradaExtratoMovimentacao:_id73', force=True).click()
-        for li in ul.find_elements(By.TAG_NAME, 'li'):
-            if li.text == conta:
-                try:
-                    li.click()
-                    return True   
-                except:
-                    ul.click()
-                    print(traceback.format_exc())
-                    return False
+    def _select_agenciaConta(self, conta, *, timeout:int=5) -> bool:
+        for _ in range(timeout):
+            try:
+                ul = self._get_ul_agenciaConta()
+                
+                _select = self.Nav.find_element(By.ID, 'formEntradaExtratoMovimentacao:_id73')
+                if not _select.text:
+                    _select.click()
+                
+                for li in ul.find_elements(By.TAG_NAME, 'li'):
+                    if li.text == conta:
+                        try:
+                            li.click()
+                            return True   
+                        except:
+                            ul.click()
+                            print(traceback.format_exc())
+                            return False
+            except Exception as err:
+                if _ >= (timeout - 1):
+                    raise err
         return False
     
+    def _get_agenciaConta(self, *, timeout:int=5) -> list:
+        erro:Exception = Exception("Não conseguiu obter a agencia e conta")
+        for _ in range(timeout):
+            try:
+                ul = self._get_ul_agenciaConta()
+                self.Nav.find_element(By.ID, 'formEntradaExtratoMovimentacao:_id73').click()
+                lista_de_contas = [x.text for x in ul.find_elements(By.TAG_NAME, 'li') if not "Agência/conta:" in x.text]
+                ul.click()
+                return lista_de_contas
+            except Exception as err:
+                erro = err
+        raise erro
     
+    def _get_tag_select_tipoInvestimento(self, *, control, count_lista_de_contas, tam_lista_de_contas, conta):
+        try:
+            tag_select_tipoInvestimento = Select(self.Nav.find_element(By.ID, 'formEntradaExtratoMovimentacao:comboTipoInvestimento'))
+        except exceptions.ElementNotFound:
+            print(P(f"Alerta {count_lista_de_contas}/{tam_lista_de_contas} - {conta} - Não existe Tipo de Investimento para essa conta ", color='magenta'))
+            control["tipoInvestimento"] = []
+            return False
+                            
+        if not control["tipoInvestimento"]:
+            control["tipoInvestimento"] = [x.text for x in tag_select_tipoInvestimento.options if not x.text in ['Selecione']]
+        control["tipoInvestimento"] = [x for x in control["tipoInvestimento"] if not x == '']
+        
     def _iterar_contas(self, *, empresa:str, codigo:str):
         self._ir_pagina_central(codigo)
         
         self._ir_pagina_investimento()
         
-        ul = self._get_ul_agenciaConta()
-        
-        self.Nav.find_element(By.ID, 'formEntradaExtratoMovimentacao:_id73').click()
-        lista_de_contas = [x.text for x in ul.find_elements(By.TAG_NAME, 'li') if not "Agência/conta:" in x.text]
-        ul.click()
+        lista_de_contas = self._get_agenciaConta()
 
-        for conta in lista_de_contas:
-            print(P(f"Iniciando {conta}"))
-            if self._select_agenciaConta(conta):
-                if self._select_mes(datetime.now()):                        
-                    while self._select_alteration('formEntradaExtratoMovimentacao:comboTipoInvestimento', list_pular=['Selecione'], orient='Down'):
-                        while self._select_alteration('formEntradaExtratoMovimentacao:comboProduto', list_pular=['Selecione', 'Todos os produtos'], orient='Down'):                            
-                            self.Nav.find_element(By.ID, 'formEntradaExtratoMovimentacao:_id130').click()
-                            self._coletar_dados()
-                            self.Nav.find_element(By.ID, 'formExtratoMovimentacao:_id642').click()
-                                                
+        tam_lista_de_contas = len(lista_de_contas)
+        count_lista_de_contas = 1
         
+        control:dict = {
+            "tipoInvestimento" : [],
+            "produto": []
+        }
+        
+        for conta in lista_de_contas:
+            control["tipoInvestimento"] = []
+            control["produto"] = []
+            for _ in range(5):
+                try:
+                    if self._select_agenciaConta(conta):
+                        if self._select_mes(datetime.now()):
+                            ###### Tipo de Documento
+                            sleep(2)
+                            while not self.Nav.find_element(By.ID, 'formEntradaExtratoMovimentacao:_id110').get_attribute('style') == 'display: none;':
+                                sleep(1)
+                            
+                            if 'Para o período informado, nenhum extrato foi localizado.' in self.Nav.find_element(By.ID, 'formEntradaExtratoMovimentacao:divErro').text:
+                                print(P(f"Alerta {count_lista_de_contas}/{tam_lista_de_contas} - {conta} - Não existe Tipo de Investimento para essa conta ", color='magenta'))
+                                break
+                            
+                            #self.Nav.find_element(By.ID, 'formEntradaExtratoMovimentacao:_id110').get_attribute('style')
+                            
+                            for _ in range(5):
+                                select_tipoInvestimento = self.Nav.find_element(By.ID, 'formEntradaExtratoMovimentacao:comboTipoInvestimento', timeout=30)
+                                if not control["tipoInvestimento"]:
+                                    select_tipoInvestimento.click()
+                                    control["tipoInvestimento"] = [x.text for x in Select(select_tipoInvestimento).options if not x.text in ['Selecione']]
+                                    select_tipoInvestimento.click()
+                                control["tipoInvestimento"] = [x for x in control["tipoInvestimento"] if not x == '']
+                                if control["tipoInvestimento"]:
+                                    break
+                                if _ >= 4:
+                                    raise Exception("lista de tipoInvestimento vazia")
+                            
+                            for tipoInvestimento in control['tipoInvestimento']:
+                                Select(self.Nav.find_element(By.ID, 'formEntradaExtratoMovimentacao:comboTipoInvestimento')).select_by_visible_text(tipoInvestimento)
+                                ###############################
+                                
+                                ###################  Produtos            
+                                if 'Para o período informado, nenhum extrato foi localizado.' in self.Nav.find_element(By.ID, 'formEntradaExtratoMovimentacao:divErro').text:
+                                    print(P(f"Alerta {count_lista_de_contas}/{tam_lista_de_contas} - {conta} - Não existe produto para essa conta ", color='magenta'))
+                                    #break
+                                    import pdb; pdb.set_trace(header=P("parada sem encontrar o produto <---------------------------------- ").pdb_header)
+                                    #raise Exception("")
+
+                                for _ in range(5):
+                                    select_produto = self.Nav.find_element(By.ID, 'formEntradaExtratoMovimentacao:comboProduto', timeout=30)
+                                    if not control['produto']:
+                                        select_produto.click()
+                                        control["produto"] = [x.text for x in Select(select_produto).options if not x.text in ['Selecione', 'Todos os produtos']]
+                                        select_produto.click()
+                                    control["produto"] = [x for x in control["produto"] if not x == '']
+                                    if control["produto"]:
+                                        break
+                                    if _ >= 4:
+                                        raise Exception("lista de produtos vazia")
+                                
+                                for produto in control['produto']:
+                                    Select(self.Nav.find_element(By.ID, 'formEntradaExtratoMovimentacao:comboProduto', timeout=30)).select_by_visible_text(produto)
+                                ##########################
+                            
+                                    self.Nav.find_element(By.ID, 'formEntradaExtratoMovimentacao:_id130').click()
+                                    self._coletar_dados()
+                                    for _ in range(5):
+                                        try:
+                                            self.Nav.find_element(By.ID, 'formExtratoMovimentacao:_id642', timeout=1).click()
+                                        except:
+                                            pass
+                                        
+                                    control['produto'].remove(produto)
+                                    
+                                control['tipoInvestimento'].remove(tipoInvestimento)
+                    print(P(f"Concuido {count_lista_de_contas}/{tam_lista_de_contas} - {conta}", color='green'))
+                    break
+                except Exception as err:
+                    print(P(f"Error {count_lista_de_contas}/{tam_lista_de_contas} - {conta}", color='red'))
+                    if "Message: stale element reference: stale element not found" in str(err):
+                        print("WebElement não encontrado")
+                    else:
+                        print(err)
+                        #traceback.format_exc()
+                    
+                    import pdb; pdb.set_trace(header=P(f"parada para o erro {count_lista_de_contas}/{tam_lista_de_contas} - {conta}  <---------------------------------- ").pdb_header)
+                    self._ir_pagina_investimento()
+                    
+            
+            count_lista_de_contas += 1
 
     def extract(self):
+        while len(self.Nav.window_handles) > 1:
+            self.Nav.switch_to.window(self.Nav.window_handles[-1])
+            self.Nav.close()
+            self.Nav.switch_to.window(self.Nav.window_handles[0])
+        
         try:
             self.Nav.find_element(By.ID, 'botaoSair')
         except exceptions.ElementNotFound:
@@ -245,12 +361,12 @@ class Bradesco:
         self._get_current_codigo()
         
         self.__empresas:dict = self._get_empresas()
-        tamanho = len(self.__empresas)
-        contar = 1
+        tamanho__empresas = len(self.__empresas)
+        contar__empresas = 1
         for empresa, codigo in self.__empresas.items():
-            print(P(f"Iniciando {contar}/{tamanho} : {empresa=}", color='green'))
+            print(P(f"Iniciando {contar__empresas}/{tamanho__empresas} : {empresa=}", color='cyan'))
             self._iterar_contas(empresa=empresa, codigo=codigo)
-            contar += 1
+            contar__empresas += 1
             
         
         

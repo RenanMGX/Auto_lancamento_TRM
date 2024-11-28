@@ -9,6 +9,7 @@ from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.support.ui import Select
 from getpass import getuser
 from time import sleep
+from functools import wraps
 from Entities.dependencies.functions import P
 import os
 from . import exceptions
@@ -19,6 +20,17 @@ class Navegador(Chrome):
     @property
     def path_download(self) -> str:
         return os.path.join(os.getcwd(), "Download_Arquivos")
+    
+    @staticmethod
+    def check_badRequest(_super) -> WebDriver:
+        if isinstance(_super, type):
+            _super = _super()
+        nav:Chrome = _super #type: ignore
+        
+        element: WebElement = nav.find_element(By.TAG_NAME, 'html')
+        if "Bad Request\nYour browser sent a request that this server could not understand.\nSize of a request header field exceeds server limit.".lower() in element.text.lower():
+            raise exceptions.BadRequest("Site não carregou corretamente")
+        return nav
         
     def __init__(self, *, url:str="", speak:bool=False): 
         self.speak:bool = speak 
@@ -33,24 +45,28 @@ class Navegador(Chrome):
         super().__init__(options=chrome_options)
         if url:
             self.get(url)
-        
+
+    
     def find_element(
         self, 
         by=By.ID, 
         value: str | None = None, 
         *, 
-        timeout:int=3, 
+        timeout:int=10, 
         force:bool=False, 
         wait_before:int|float=0, 
         wait_after:int|float=0
     ) -> WebElement:
         
+        
+        element:Chrome = Navegador.check_badRequest(super())
+        
         if wait_before > 0:
             sleep(wait_before)
         for _ in range(timeout*4):
             try:
-                result = super().find_element(by, value)
-                print(P(f"({by=}, {value=}): Encontrado com Sucesso!", color='green')) if self.speak else None
+                result = element.find_element(by, value)
+                print(P(f"({by=}, {value=}): Encontrado com!", color='green')) if self.speak else None
                 if wait_after > 0:
                     sleep(wait_after)
                 return result
@@ -71,7 +87,7 @@ class Navegador(Chrome):
         by=By.ID, 
         value: str | None = None, 
         *, 
-        timeout:int=3, 
+        timeout:int=10, 
         force:bool=False,
         wait_before:int|float=0, 
         wait_after:int|float=0
