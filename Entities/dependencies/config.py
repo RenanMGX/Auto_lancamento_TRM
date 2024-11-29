@@ -18,10 +18,11 @@ class Config:
     def config(self):
         return self.__config
     
-    def __init__(self, file_name:str=os.path.join(os.getcwd(), "config.init")):
+    def __init__(self, file_name:str=os.path.join(f"C:\\Users\\renan.oliveira\\.informe_rendimento_trm", "config.init")):
         self.__file_name:str = file_name
         if not os.path.dirname(self.file_name):
-            raise Exception(f"o caminho {os.path.dirname(self.file_name)} não é valido!")
+            os.makedirs(os.path.dirname(self.file_name))
+            #raise Exception(f"o caminho {os.path.dirname(self.file_name)} não é valido!")
         if not os.path.exists(self.file_name):
             with open(self.file_name, 'w')as _file:
                 _file.write("")

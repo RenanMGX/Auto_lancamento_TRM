@@ -13,6 +13,7 @@ from functools import wraps
 from Entities.dependencies.functions import P
 import os
 from . import exceptions
+import sys
 
 from selenium.webdriver.remote.webelement import WebElement
 
@@ -22,15 +23,18 @@ class Navegador(Chrome):
         return os.path.join(os.getcwd(), "Download_Arquivos")
     
     @staticmethod
-    def check_badRequest(_super) -> WebDriver:
+    def check_badRequest(_super, *, value) -> WebElement:
         if isinstance(_super, type):
             _super = _super()
         nav:Chrome = _super #type: ignore
         
         element: WebElement = nav.find_element(By.TAG_NAME, 'html')
         if "Bad Request\nYour browser sent a request that this server could not understand.\nSize of a request header field exceeds server limit.".lower() in element.text.lower():
+            print(f"Bad Request no {value=}")
             raise exceptions.BadRequest("Site não carregou corretamente")
-        return nav
+
+        return element
+    
         
     def __init__(self, *, url:str="", speak:bool=False): 
         self.speak:bool = speak 
@@ -58,14 +62,13 @@ class Navegador(Chrome):
         wait_after:int|float=0
     ) -> WebElement:
         
-        
-        element:Chrome = Navegador.check_badRequest(super())
+        #element:WebElement = Navegador.check_badRequest(super(), value=value)
         
         if wait_before > 0:
             sleep(wait_before)
         for _ in range(timeout*4):
             try:
-                result = element.find_element(by, value)
+                result = super().find_element(by, value)
                 print(P(f"({by=}, {value=}): Encontrado com!", color='green')) if self.speak else None
                 if wait_after > 0:
                     sleep(wait_after)
@@ -92,6 +95,7 @@ class Navegador(Chrome):
         wait_before:int|float=0, 
         wait_after:int|float=0
     ) -> List[WebElement]:
+        
         
         if wait_before > 0:
             sleep(wait_before)

@@ -65,7 +65,7 @@ class Bradesco:
             self.Nav.find_element(By.ID, 'botaoSair').click()
             print(P("Navegador encerrado!", color='cyan'))
             sleep(3)
-        except AttributeError as err:
+        except:
             pass
         try:
             self.Nav.close()
@@ -100,15 +100,20 @@ class Bradesco:
             pass
             #print(P("codigo da pagina atual não foi encontrado", color='red'))
     
+    def _verify_badRequest(self):
+        if "Bad Request\nYour browser sent a request that this server could not understand.\nSize of a request header field exceeds server limit.".lower() in self.Nav.find_element(By.TAG_NAME, 'html').text.lower():
+            raise exceptions.BadRequest("Site não carregou corretamente")
+        
     def _ir_pagina_central(self, codigo):
         self._get_current_codigo()
         self.Nav.get(f"https://www.ne12.bradesconetempresa.b.br/ibpjlogin/grupoeconomico.jsf?CTRL={self.__current_codigo}&codigoEmpresa={codigo}")
         Bradesco.verificar_tela_branca(self.Nav)
-    
+                
     def _ir_pagina_investimento(self):
         self._get_current_codigo()
         self.Nav.get(f"https://www.ne12.bradesconetempresa.b.br/ibpjextratoinvestimentos/entrada.jsf?CTRL={self.__current_codigo}&amp;car=ISE")
         Bradesco.verificar_tela_branca(self.Nav)
+                
     
     def _select_mes(self, date:datetime=datetime.now()) -> bool:
         self.Nav.find_element(By.ID, 'formEntradaExtratoMovimentacao:tipoConsultaPorMes').click()
@@ -142,6 +147,8 @@ class Bradesco:
             if tag.get_attribute('value') != codigo:
                 return True
             return False
+        except exceptions.BadRequest as err:
+            raise  err
         except:
             return False
     
@@ -195,6 +202,8 @@ class Bradesco:
                     exceptions.AgenciaContaNotFound("o Campo 'Agência/conta:' não foi encontrado")
                 ul:WebElement = ul_s[0]
                 return ul
+            except exceptions.BadRequest as err:
+                raise  err
             except:
                 sleep(1)
         raise Exception("não foi possivel adiquirir a UL da agencia e conta")
@@ -217,10 +226,26 @@ class Bradesco:
                             ul.click()
                             print(traceback.format_exc())
                             return False
+            except exceptions.BadRequest as _err:
+                raise  _err
             except Exception as err:
                 if _ >= (timeout - 1):
                     raise err
         return False
+    
+    def _selectTag(self,  *,target:str, value:str):
+        for _ in range(5):
+            try:
+                tag_select = self.Nav.find_element(By.ID, target, timeout=30)
+                tag_select.click(); tag_select.click()
+                Select(tag_select).select_by_visible_text(value)
+                return
+            
+            except exceptions.BadRequest as err:
+                raise  err
+            except:
+                sleep(1)
+        raise Exception(f"não foi possivel selecionar o {value}")
     
     def _get_agenciaConta(self, *, timeout:int=5) -> list:
         erro:Exception = Exception("Não conseguiu obter a agencia e conta")
@@ -231,6 +256,8 @@ class Bradesco:
                 lista_de_contas = [x.text for x in ul.find_elements(By.TAG_NAME, 'li') if not "Agência/conta:" in x.text]
                 ul.click()
                 return lista_de_contas
+            except exceptions.BadRequest as err:
+                raise  err
             except Exception as err:
                 erro = err
         raise erro
@@ -238,6 +265,8 @@ class Bradesco:
     def _get_tag_select_tipoInvestimento(self, *, control, count_lista_de_contas, tam_lista_de_contas, conta):
         try:
             tag_select_tipoInvestimento = Select(self.Nav.find_element(By.ID, 'formEntradaExtratoMovimentacao:comboTipoInvestimento'))
+        except exceptions.BadRequest as err:
+            raise  err
         except exceptions.ElementNotFound:
             print(P(f"Alerta {count_lista_de_contas}/{tam_lista_de_contas} - {conta} - Não existe Tipo de Investimento para essa conta ", color='magenta'))
             control["tipoInvestimento"] = []
@@ -246,8 +275,33 @@ class Bradesco:
         if not control["tipoInvestimento"]:
             control["tipoInvestimento"] = [x.text for x in tag_select_tipoInvestimento.options if not x.text in ['Selecione']]
         control["tipoInvestimento"] = [x for x in control["tipoInvestimento"] if not x == '']
+    
+    #   
+    def _wait_load(self, type:Literal['tipoInvestimento', 'produtos'],*, before:int = 3, alfter:int|float=.25, during:int|float=.125):
+        if type == 'tipoInvestimento':
+            target = 'formEntradaExtratoMovimentacao:_id102'
+        elif type == 'produtos':
+            target = 'formEntradaExtratoMovimentacao:_id110'
         
-    def _iterar_contas(self, *, empresa:str, codigo:str):
+        for _ in range(before*8):
+            try: 
+                if not self.Nav.find_element(By.ID, target).get_attribute('style') == 'display: none;':
+                    while not self.Nav.find_element(By.ID, target).get_attribute('style') == 'display: none;':
+                        sleep(during)
+                    break
+            except exceptions.BadRequest as err:
+                raise err
+            except Exception:
+                pass
+            sleep(.125)
+        sleep(alfter)
+        
+    def _verificExtrato(self) -> bool:
+        if 'Para o período informado, nenhum extrato foi localizado.' in self.Nav.find_element(By.ID, 'formEntradaExtratoMovimentacao:divErro').text:
+            return True
+        return False
+        
+    def _iterar_contas(self, *, codigo:str):
         self._ir_pagina_central(codigo)
         
         self._ir_pagina_investimento()
@@ -259,24 +313,27 @@ class Bradesco:
         
         control:dict = {
             "tipoInvestimento" : [],
-            "produto": []
+            "tipoInvestimento_executado" : [],
+            "produto": [],
+            "produto_executado": []
         }
         
         for conta in lista_de_contas:
             control["tipoInvestimento"] = []
             control["produto"] = []
+            control["tipoInvestimento_executado"] = []
+            control["produto_executado"] = []
             for _ in range(5):
                 try:
                     if self._select_agenciaConta(conta):
                         if self._select_mes(datetime.now()):
                             ###### Tipo de Documento
-                            sleep(2)
-                            while not self.Nav.find_element(By.ID, 'formEntradaExtratoMovimentacao:_id110').get_attribute('style') == 'display: none;':
-                                sleep(1)
+                            self._wait_load('tipoInvestimento')
                             
-                            if 'Para o período informado, nenhum extrato foi localizado.' in self.Nav.find_element(By.ID, 'formEntradaExtratoMovimentacao:divErro').text:
+                            if self._verificExtrato():
                                 print(P(f"Alerta {count_lista_de_contas}/{tam_lista_de_contas} - {conta} - Não existe Tipo de Investimento para essa conta ", color='magenta'))
                                 break
+                            print(P(f"Iniciado {count_lista_de_contas}/{tam_lista_de_contas} - {conta}", color='white'))
                             
                             #self.Nav.find_element(By.ID, 'formEntradaExtratoMovimentacao:_id110').get_attribute('style')
                             
@@ -292,17 +349,21 @@ class Bradesco:
                                 if _ >= 4:
                                     raise Exception("lista de tipoInvestimento vazia")
                             
+                            count_tipoInvestimento = 1
                             for tipoInvestimento in control['tipoInvestimento']:
-                                Select(self.Nav.find_element(By.ID, 'formEntradaExtratoMovimentacao:comboTipoInvestimento')).select_by_visible_text(tipoInvestimento)
+                                if tipoInvestimento in control['tipoInvestimento_executado']:
+                                    continue
+                                self._selectTag(target='formEntradaExtratoMovimentacao:comboTipoInvestimento', value=tipoInvestimento)
                                 ###############################
                                 
-                                ###################  Produtos            
-                                if 'Para o período informado, nenhum extrato foi localizado.' in self.Nav.find_element(By.ID, 'formEntradaExtratoMovimentacao:divErro').text:
-                                    print(P(f"Alerta {count_lista_de_contas}/{tam_lista_de_contas} - {conta} - Não existe produto para essa conta ", color='magenta'))
-                                    #break
-                                    import pdb; pdb.set_trace(header=P("parada sem encontrar o produto <---------------------------------- ").pdb_header)
-                                    #raise Exception("")
-
+                                ###################  Produtos   
+                                self._wait_load('produtos')
+                                
+                                if self._verificExtrato():
+                                    print(P(f"Alerta {count_lista_de_contas}/{tam_lista_de_contas} - {conta} - Não existe Tipo de Investimento para essa conta ", color='magenta'))
+                                    control['tipoInvestimento'].remove(tipoInvestimento)
+                                    continue
+                                
                                 for _ in range(5):
                                     select_produto = self.Nav.find_element(By.ID, 'formEntradaExtratoMovimentacao:comboProduto', timeout=30)
                                     if not control['produto']:
@@ -315,36 +376,51 @@ class Bradesco:
                                     if _ >= 4:
                                         raise Exception("lista de produtos vazia")
                                 
+                                print(P(f"    {count_tipoInvestimento}/{len(control['tipoInvestimento'])} - {tipoInvestimento}", color='yellow'))
+                                
+                                count_produto = 1
                                 for produto in control['produto']:
-                                    Select(self.Nav.find_element(By.ID, 'formEntradaExtratoMovimentacao:comboProduto', timeout=30)).select_by_visible_text(produto)
+                                    if produto in control['produto_executado']:
+                                        continue
+                                    self._selectTag(target='formEntradaExtratoMovimentacao:comboProduto', value=produto)
                                 ##########################
-                            
                                     self.Nav.find_element(By.ID, 'formEntradaExtratoMovimentacao:_id130').click()
                                     self._coletar_dados()
                                     for _ in range(5):
                                         try:
                                             self.Nav.find_element(By.ID, 'formExtratoMovimentacao:_id642', timeout=1).click()
+                                        except exceptions.BadRequest as err:
+                                            raise  err
                                         except:
                                             pass
                                         
-                                    control['produto'].remove(produto)
+                                    print(P(f"        {count_produto}/{len(control['produto'])} - {produto}", color='yellow'))
+                                    count_produto += 1
+                                    #control['produto'].remove(produto)
+                                    control['produto_executado'].append(produto)
                                     
-                                control['tipoInvestimento'].remove(tipoInvestimento)
-                    print(P(f"Concuido {count_lista_de_contas}/{tam_lista_de_contas} - {conta}", color='green'))
+                                #control['tipoInvestimento'].remove(tipoInvestimento)
+                                control['tipoInvestimento_executado'].append(tipoInvestimento)
+                                
+                                count_tipoInvestimento += 1
+                            
+                    print(P(f"Concuido - {conta}", color='green'))
                     break
                 except Exception as err:
                     print(P(f"Error {count_lista_de_contas}/{tam_lista_de_contas} - {conta}", color='red'))
-                    if "Message: stale element reference: stale element not found" in str(err):
-                        print("WebElement não encontrado")
-                    else:
-                        print(err)
-                        #traceback.format_exc()
+                    # if "Message: stale element reference: stale element not found" in str(err):
+                    #     print("WebElement não encontrado")
+                    # else:
+                    #     print(err)
+                    #     #traceback.format_exc()
                     
-                    import pdb; pdb.set_trace(header=P(f"parada para o erro {count_lista_de_contas}/{tam_lista_de_contas} - {conta}  <---------------------------------- ").pdb_header)
-                    self._ir_pagina_investimento()
+                    # import pdb; pdb.set_trace(header=P(f"parada para o erro {count_lista_de_contas}/{tam_lista_de_contas} - {conta}  <---------------------------------- ").pdb_header)
+                    # self._ir_pagina_investimento()
                     
             
             count_lista_de_contas += 1
+        
+
 
     def extract(self):
         while len(self.Nav.window_handles) > 1:
@@ -365,14 +441,12 @@ class Bradesco:
         contar__empresas = 1
         for empresa, codigo in self.__empresas.items():
             print(P(f"Iniciando {contar__empresas}/{tamanho__empresas} : {empresa=}", color='cyan'))
-            self._iterar_contas(empresa=empresa, codigo=codigo)
+            self._iterar_contas(codigo=codigo)
             contar__empresas += 1
             
         
-        
-        import pdb; pdb.set_trace(header=P("Está Logado!").pdb_header)
-
-        #self.Nav.find_element(By.ID, 'paginaCentral').get_attribute("src")
+        self._exit()
+        return
         
 if __name__ == "__main__":
     pass
