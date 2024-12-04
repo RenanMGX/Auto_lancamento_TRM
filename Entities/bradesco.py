@@ -39,6 +39,7 @@ class Bradesco:
             
         self.dados:Dict[str, list] = {
             'tipo': [],
+            'empresa': [],
             'agencia': [],
             'conta': [],
             'Dt. Aplicação': [],
@@ -50,7 +51,6 @@ class Bradesco:
         
         self.__current_codigo:str = ""
         
-
     def _start_nav(self):
         try:
             self.__nav
@@ -115,7 +115,7 @@ class Bradesco:
         Bradesco.verificar_tela_branca(self.Nav)
                 
     
-    def _select_mes(self, date:datetime=datetime.now()) -> bool:
+    def _select_mes(self, date: datetime) -> bool:
         self.Nav.find_element(By.ID, 'formEntradaExtratoMovimentacao:tipoConsultaPorMes').click()
         
         tag_select_meses = self.Nav.find_element(By.ID, 'formEntradaExtratoMovimentacao:comboPeriodoMes')
@@ -151,48 +151,42 @@ class Bradesco:
             raise  err
         except:
             return False
+        
+    def _feed_data(self, *, element:WebElement, type:str, empresa:str, agencia:str, conta:str) -> None:
+        for tr in element.find_elements(By.TAG_NAME, 'tr'):
+            if (tr.text) and (not 'Total' in tr.text):
+                text_temp:list = tr.text.split(' ')
+                
+                self.dados['tipo'].append(type)
+                
+                self.dados['empresa'].append(empresa)
+                self.dados['agencia'].append(agencia)
+                self.dados['conta'].append(conta)
+                
+                self.dados['Dt. Aplicação'].append(text_temp[0])
+                self.dados['Dt. Vencto'].append(text_temp[1])
+                self.dados['Dt. Resgate'].append(text_temp[2])
+                self.dados['Taxa (%)'].append(text_temp[3])
+                self.dados['Vlr Princ'].append(text_temp[4])
     
-    def _coletar_dados(self) -> None:
+    def _verificAplicResga(self, element: WebElement):
+        if 'No momento, não é possível concluir esse serviço. Por favor, tente mais tarde.'.lower() in element.text.lower():
+            raise exceptions.AplicacaoResgateNotFound(element.text.lower())
+    
+    def _coletar_dados(self, empresa:str) -> None:
         agencia, conta = re.split(r'[ ]+[|][ ]+', self.Nav.find_element(By.ID, 'formExtratoMovimentacao:_id328').text)
         
         self.Nav.find_element(By.XPATH, '//*[@id="formExtratoMovimentacao"]/div[1]/div[5]/div/table/tbody[8]/tr/td/span[2]').click()
-        resgate_table = self.Nav.find_element(By.XPATH, '//*[@id="formExtratoMovimentacao"]/div[1]/div[5]/div/table/tbody[9]')
-        for tr in resgate_table.find_elements(By.TAG_NAME, 'tr'):
-            if (tr.text) and (not 'Total' in tr.text):
-                text_temp:list = tr.text.split(' ')
-                
-                self.dados['tipo'].append('Resgate')
-                
-                self.dados['agencia'].append(agencia)
-                self.dados['conta'].append(conta)
-                
-                self.dados['Dt. Aplicação'].append(text_temp[0])
-                self.dados['Dt. Vencto'].append(text_temp[1])
-                self.dados['Dt. Resgate'].append(text_temp[2])
-                self.dados['Taxa (%)'].append(text_temp[3])
-                self.dados['Vlr Princ'].append(text_temp[4])
-        self.Nav.find_element(By.XPATH, '//*[@id="formExtratoMovimentacao"]/div[1]/div[5]/div/table/tbody[8]/tr/td/span[2]').click()
-
         self.Nav.find_element(By.XPATH, '//*[@id="formExtratoMovimentacao"]/div[1]/div[5]/div/table/tbody[5]/tr/td/span[2]').click()
-        aplicacao_table = self.Nav.find_element(By.XPATH, '//*[@id="formExtratoMovimentacao"]/div[1]/div[5]/div/table/tbody[6]')
-        for tr in aplicacao_table.find_elements(By.TAG_NAME, 'tr'):
-            if (tr.text) and (not 'Total' in tr.text):
-                text_temp:list = tr.text.split(' ')
-                
-                self.dados['tipo'].append('Aplicação')
-                
-                self.dados['agencia'].append(agencia)
-                self.dados['conta'].append(conta)
-                
-                self.dados['Dt. Aplicação'].append(text_temp[0])
-                self.dados['Dt. Vencto'].append(text_temp[1])
-                self.dados['Dt. Resgate'].append(text_temp[2])
-                self.dados['Taxa (%)'].append(text_temp[3])
-                self.dados['Vlr Princ'].append(text_temp[4])
         
-        self.Nav.find_element(By.XPATH, '//*[@id="formExtratoMovimentacao"]/div[1]/div[5]/div/table/tbody[5]/tr/td/span[2]').click()
-        #return dados
-        #import pdb; pdb.set_trace(header=P("_coletar_dados").pdb_header)
+        resgate_table = self.Nav.find_element(By.XPATH, '//*[@id="formExtratoMovimentacao"]/div[1]/div[5]/div/table/tbody[9]')
+        self._verificAplicResga(resgate_table)
+        
+        aplicacao_table = self.Nav.find_element(By.XPATH, '//*[@id="formExtratoMovimentacao"]/div[1]/div[5]/div/table/tbody[6]')
+        self._verificAplicResga(aplicacao_table)        
+        
+        self._feed_data(element=resgate_table, type="Resgate", empresa=empresa, agencia=agencia, conta=conta)
+        self._feed_data(element=aplicacao_table, type="Aplicação", empresa=empresa, agencia=agencia, conta=conta)
 
     def _get_ul_agenciaConta(self):
         for _ in range(60):
@@ -300,8 +294,8 @@ class Bradesco:
         if 'Para o período informado, nenhum extrato foi localizado.' in self.Nav.find_element(By.ID, 'formEntradaExtratoMovimentacao:divErro').text:
             return True
         return False
-        
-    def _iterar_contas(self, *, codigo:str):
+    
+    def _iterar_contas(self, *, codigo:str, empresa:str, date: datetime):
         self._ir_pagina_central(codigo)
         
         self._ir_pagina_investimento()
@@ -323,25 +317,25 @@ class Bradesco:
             control["produto"] = []
             control["tipoInvestimento_executado"] = []
             control["produto_executado"] = []
-            for _ in range(5):
+            for _ in range(6):
                 try:
                     if self._select_agenciaConta(conta):
-                        if self._select_mes(datetime.now()):
+                        if self._select_mes(date):
                             ###### Tipo de Documento
                             self._wait_load('tipoInvestimento')
                             
                             if self._verificExtrato():
-                                print(P(f"Alerta {count_lista_de_contas}/{tam_lista_de_contas} - {conta} - Não existe Tipo de Investimento para essa conta ", color='magenta'))
+                                print(P(f"    Alerta {count_lista_de_contas}/{tam_lista_de_contas} - {conta} - Não existe Tipo de Investimento para essa conta ", color='magenta'))
                                 break
-                            print(P(f"Iniciado {count_lista_de_contas}/{tam_lista_de_contas} - {conta}", color='white'))
-                            
-                            #self.Nav.find_element(By.ID, 'formEntradaExtratoMovimentacao:_id110').get_attribute('style')
+                            print(P(f"    Iniciado {count_lista_de_contas}/{tam_lista_de_contas} - {conta}", color='white')) if not control["tipoInvestimento_executado"] else None
                             
                             for _ in range(5):
-                                select_tipoInvestimento = self.Nav.find_element(By.ID, 'formEntradaExtratoMovimentacao:comboTipoInvestimento', timeout=30)
+                                select_tipoInvestimento = self.Nav.find_element(By.ID, 'formEntradaExtratoMovimentacao:comboTipoInvestimento')
                                 if not control["tipoInvestimento"]:
                                     select_tipoInvestimento.click()
+                                    sleep(.5)
                                     control["tipoInvestimento"] = [x.text for x in Select(select_tipoInvestimento).options if not x.text in ['Selecione']]
+                                    sleep(.25)
                                     select_tipoInvestimento.click()
                                 control["tipoInvestimento"] = [x for x in control["tipoInvestimento"] if not x == '']
                                 if control["tipoInvestimento"]:
@@ -354,21 +348,22 @@ class Bradesco:
                                 if tipoInvestimento in control['tipoInvestimento_executado']:
                                     continue
                                 self._selectTag(target='formEntradaExtratoMovimentacao:comboTipoInvestimento', value=tipoInvestimento)
-                                ###############################
-                                
-                                ###################  Produtos   
+
+                                ###################  Produtos   <<<<<<<<<<<<<<<<<<<<<<<<<
                                 self._wait_load('produtos')
                                 
                                 if self._verificExtrato():
-                                    print(P(f"Alerta {count_lista_de_contas}/{tam_lista_de_contas} - {conta} - Não existe Tipo de Investimento para essa conta ", color='magenta'))
+                                    print(P(f"    Alerta {count_lista_de_contas}/{tam_lista_de_contas} - {conta} - Não existe Tipo de Investimento para essa conta ", color='magenta'))
                                     control['tipoInvestimento'].remove(tipoInvestimento)
                                     continue
                                 
                                 for _ in range(5):
-                                    select_produto = self.Nav.find_element(By.ID, 'formEntradaExtratoMovimentacao:comboProduto', timeout=30)
+                                    select_produto = self.Nav.find_element(By.ID, 'formEntradaExtratoMovimentacao:comboProduto')
                                     if not control['produto']:
                                         select_produto.click()
+                                        sleep(.5)
                                         control["produto"] = [x.text for x in Select(select_produto).options if not x.text in ['Selecione', 'Todos os produtos']]
+                                        sleep(.25)
                                         select_produto.click()
                                     control["produto"] = [x for x in control["produto"] if not x == '']
                                     if control["produto"]:
@@ -376,16 +371,19 @@ class Bradesco:
                                     if _ >= 4:
                                         raise Exception("lista de produtos vazia")
                                 
-                                print(P(f"    {count_tipoInvestimento}/{len(control['tipoInvestimento'])} - {tipoInvestimento}", color='yellow'))
+                                print(P(f"        {count_tipoInvestimento}/{len(control['tipoInvestimento'])} - {tipoInvestimento}", color='yellow')) if not control["produto_executado"] else None
                                 
                                 count_produto = 1
                                 for produto in control['produto']:
                                     if produto in control['produto_executado']:
                                         continue
                                     self._selectTag(target='formEntradaExtratoMovimentacao:comboProduto', value=produto)
-                                ##########################
+                                    ############ FIM
+
                                     self.Nav.find_element(By.ID, 'formEntradaExtratoMovimentacao:_id130').click()
-                                    self._coletar_dados()
+                                    
+                                    self._coletar_dados(empresa=empresa)
+                                    
                                     for _ in range(5):
                                         try:
                                             self.Nav.find_element(By.ID, 'formExtratoMovimentacao:_id642', timeout=1).click()
@@ -394,35 +392,29 @@ class Bradesco:
                                         except:
                                             pass
                                         
-                                    print(P(f"        {count_produto}/{len(control['produto'])} - {produto}", color='yellow'))
+                                    print(P(f"            {count_produto}/{len(control['produto'])} - {produto}", color='yellow'))
                                     count_produto += 1
-                                    #control['produto'].remove(produto)
                                     control['produto_executado'].append(produto)
                                     
-                                #control['tipoInvestimento'].remove(tipoInvestimento)
                                 control['tipoInvestimento_executado'].append(tipoInvestimento)
                                 
                                 count_tipoInvestimento += 1
                             
-                    print(P(f"Concuido - {conta}", color='green'))
+                    print(P(f"    Concuido - {conta}", color='green'))
                     break
+                
+                except NoSuchElementException:
+                    print(P(f"    Error {count_lista_de_contas}/{tam_lista_de_contas} - {conta}", color='red'))
+                    print(P("        Elemento do site não encontrado não encontrado"))
+                    
                 except Exception as err:
-                    print(P(f"Error {count_lista_de_contas}/{tam_lista_de_contas} - {conta}", color='red'))
-                    # if "Message: stale element reference: stale element not found" in str(err):
-                    #     print("WebElement não encontrado")
-                    # else:
-                    #     print(err)
-                    #     #traceback.format_exc()
-                    
-                    # import pdb; pdb.set_trace(header=P(f"parada para o erro {count_lista_de_contas}/{tam_lista_de_contas} - {conta}  <---------------------------------- ").pdb_header)
-                    # self._ir_pagina_investimento()
-                    
+                    print(P(f"    Error {count_lista_de_contas}/{tam_lista_de_contas} - {conta}", color='red'))
+                    print(P(f"        {str(err)}"))
+                    self._ir_pagina_investimento()
             
             count_lista_de_contas += 1
-        
 
-
-    def extract(self):
+    def extract(self, date: datetime):
         while len(self.Nav.window_handles) > 1:
             self.Nav.switch_to.window(self.Nav.window_handles[-1])
             self.Nav.close()
@@ -440,10 +432,14 @@ class Bradesco:
         tamanho__empresas = len(self.__empresas)
         contar__empresas = 1
         for empresa, codigo in self.__empresas.items():
+            #if empresa == "PATRIMAR ENGENHARIA S.A 023.236.821/0001-27":
             print(P(f"Iniciando {contar__empresas}/{tamanho__empresas} : {empresa=}", color='cyan'))
-            self._iterar_contas(codigo=codigo)
+            self._iterar_contas(codigo=codigo, empresa=empresa, date=date)
             contar__empresas += 1
-            
+            sleep(2)
+        
+        lista = list(self.__empresas)
+        self._ir_pagina_central(self.__empresas[lista[-1]])
         
         self._exit()
         return

@@ -5,6 +5,7 @@ import sys
 import os
 from Entities.dependencies.logs import Logs, traceback
 from functools import wraps
+from datetime import datetime
 
 
 
@@ -77,7 +78,7 @@ class Controller:
     def iniciar_extrac(self, *args, **kwargs):
         try:
             self.iniciar_navegador(alert=False)
-            self.bradesco.extract()
+            self.bradesco.extract(date=datetime.now())
         except Exception as err:
             self.view.alerta(title='Alerta', description=str(err))
         return

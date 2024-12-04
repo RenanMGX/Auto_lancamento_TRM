@@ -21,3 +21,11 @@ class BadRequest(Exception):
 class Desconectado(Exception):
     def __init__(self, *args: object) -> None:
         super().__init__(*args)
+        
+class PageNotFound(Exception):
+    def __init__(self, *args: object) -> None:
+        super().__init__(*args)
+        
+class AplicacaoResgateNotFound(Exception):
+    def __init__(self, *args: object) -> None:
+        super().__init__(*args)
