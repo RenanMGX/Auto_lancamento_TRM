@@ -61,7 +61,25 @@ class Ui_Interface(QtWidgets.QMainWindow):
         self.Tela0_text_moviDiaria.setReadOnly(True)
         ##
         
-        #linha 2
+        # linha 2
+        
+        self.Tela0_label_lancamentoTitulo = QtWidgets.QLabel(self.Tela0)
+        self.Tela0_label_lancamentoTitulo.setGeometry(QtCore.QRect(50,100,600,25))
+        self.Tela0_label_lancamentoTitulo.setObjectName("Tela0_label_lancamentoTitulo")
+        
+        
+        self.Tela0_bt_lancamento = QtWidgets.QToolButton(self.Tela0)
+        self.Tela0_bt_lancamento.setGeometry(QtCore.QRect(10,125,25,25))
+        self.Tela0_bt_lancamento.setObjectName("Tela0_bt_lancamento")
+        #self.Tela0_bt_moviDiaria.clicked.connect(self.procurar_file)
+        
+        self.Tela0_text_lancamento = QtWidgets.QLineEdit(self.Tela0)
+        self.Tela0_text_lancamento.setGeometry(QtCore.QRect(50,125,600,25))
+        self.Tela0_text_lancamento.setObjectName("Tela0_text_lancamento")
+        self.Tela0_text_lancamento.setReadOnly(True)
+        ##
+        
+        #linha 3
         
         self.Tela0_bt_iniciarNavegador = QtWidgets.QPushButton(self.Tela0)
         self.Tela0_bt_iniciarNavegador.setGeometry(QtCore.QRect(10,425,100,25))
@@ -71,6 +89,12 @@ class Ui_Interface(QtWidgets.QMainWindow):
         self.Tela0_bt_iniciarExtract.setGeometry(QtCore.QRect(125,425,100,25))
         self.Tela0_bt_iniciarExtract.setObjectName("Tela0_bt_iniciarExtract")
         self.Tela0_bt_iniciarExtract.setVisible(False)
+        
+        self.Tela0_bt_teste = QtWidgets.QPushButton(self.Tela0)
+        self.Tela0_bt_teste.setGeometry(QtCore.QRect(300,425,100,25))
+        self.Tela0_bt_teste.setObjectName("Tela0_bt_iniciarExtract")
+        self.Tela0_bt_teste.setText("Teste")
+        #self.Tela0_bt_teste.setVisible(False)
         
         self.Telas.addWidget(self.Tela0)
         self.Telas.setCurrentIndex(0)
@@ -119,9 +143,15 @@ class Ui_Interface(QtWidgets.QMainWindow):
     def retranslateUi(self):
         _translate = QtCore.QCoreApplication.translate
         self.setWindowTitle(_translate("Interface", f"Informe de Rendimentos TRM | Versão: {self.__version}"))
+        
         self.Tela0_label_moviDiariaTitulo.setText(_translate("Interface", "Caminho da planilha da Movimentação Diaria:"))
         self.Tela0_bt_moviDiaria.setText(_translate("Interface", "..."))
         self.Tela0_text_moviDiaria.setText(_translate("Interface", "Vazio"))
+        
+        self.Tela0_label_lancamentoTitulo.setText(_translate("Interface", "Caminho da planilha da Lançamento - TRM:"))
+        self.Tela0_bt_lancamento.setText(_translate("Interface", "..."))
+        self.Tela0_text_lancamento.setText(_translate("Interface", "Vazio"))
+        
         self.Tela0_bt_iniciarNavegador.setText(_translate("Interface", "Abrir Navegador"))
         self.Tela0_bt_iniciarExtract.setText(_translate("Interface", "Iniciar Extração"))
         
@@ -136,10 +166,12 @@ class Ui_Interface(QtWidgets.QMainWindow):
         path = QtWidgets.QFileDialog.getOpenFileName()[0]
         if path:
             return path
+        else:
+            return ""
 
         raise Exception(f"'{path=} não encontrado")
     
-    def alerta(self, title:Literal['Alerta', 'Error', 'Concluido'], description:str) -> None:
+    def alerta(self, *, title:Literal['Alerta', 'Error', 'Concluido'], description:str) -> None:
         alert = QtWidgets.QMessageBox()
         alert.setWindowTitle(title)
         alert.setText(description)

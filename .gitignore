@@ -8,6 +8,8 @@
 *.ipynb
 *teste.py
 *Download_Arquivos
+*Arquivos-Bot
+*ArquivoBase
 
 
 # Created by https://www.toptal.com/developers/gitignore/api/python,venv,visualstudiocode

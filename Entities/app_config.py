@@ -44,14 +44,13 @@ class AppConfig:
             values[key] = value
         self.__save(values)
         
-    def remove(self, *args) -> None:
+    def remove(self, delete_arg) -> None:
         values:dict = self.load()
-        value_temp:dict = {}
-        for key,value in values.items():
-            for del_key in args:
-                if del_key != key:
-                    value_temp[key] = value
-        self.__save(value_temp)
+        try:
+            del values[delete_arg]
+        except:
+            print("erro ao apagar")
+        self.__save(values)
         
     def alter(self, **kwargs) -> None:
         for key, value in kwargs.items():
@@ -65,4 +64,6 @@ class AppConfig:
         
 if __name__ == "__main__":
     bot = AppConfig()
-    bot._reset()
+    print(bot.load())
+    bot.remove("path_movi_diaria")
+    

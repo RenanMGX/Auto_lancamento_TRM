@@ -75,6 +75,7 @@ class Bradesco:
             del self.__nav
         except:
             pass
+        
     
 
     def _get_empresas(self) -> dict:
@@ -414,6 +415,19 @@ class Bradesco:
             
             count_lista_de_contas += 1
 
+    def _zerarDados(self) -> None:
+        self.dados:Dict[str, list] = {
+            'tipo': [],
+            'empresa': [],
+            'agencia': [],
+            'conta': [],
+            'Dt. Aplicação': [],
+            'Dt. Vencto': [],
+            'Dt. Resgate': [],
+            'Taxa (%)': [],
+            'Vlr Princ': []
+        }
+    
     def extract(self, date: datetime):
         while len(self.Nav.window_handles) > 1:
             self.Nav.switch_to.window(self.Nav.window_handles[-1])
@@ -428,6 +442,8 @@ class Bradesco:
         Bradesco.verificar_tela_branca(self.Nav)
         self._get_current_codigo()
         
+        self._zerarDados()
+        
         self.__empresas:dict = self._get_empresas()
         tamanho__empresas = len(self.__empresas)
         contar__empresas = 1
@@ -441,7 +457,7 @@ class Bradesco:
         lista = list(self.__empresas)
         self._ir_pagina_central(self.__empresas[lista[-1]])
         
-        self._exit()
+        #self._exit()
         return
         
 if __name__ == "__main__":

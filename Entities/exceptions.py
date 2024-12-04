@@ -29,3 +29,16 @@ class PageNotFound(Exception):
 class AplicacaoResgateNotFound(Exception):
     def __init__(self, *args: object) -> None:
         super().__init__(*args)
+        
+class FileMoviDiariaNotFound(Exception):
+    def __init__(self, *args: object) -> None:
+        super().__init__(*args)
+        
+class FileLancamentoNotFound(Exception):
+    def __init__(self, *args: object) -> None:
+        super().__init__(*args)
+
+class ColunaNotFoud(Exception):
+    def __init__(self, *args: object) -> None:
+        super().__init__(*args)
+        
