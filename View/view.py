@@ -14,9 +14,24 @@ from datetime import datetime
     
 class Ui_Interface(QtWidgets.QMainWindow):
     @property
-    def date(self) -> datetime:
-        date = self.Tela0_calendar.selectedDate()
+    def start_date(self) -> datetime:
+        date = self.__start_date
+        if self.__end_date:
+            if self.__end_date < self.__start_date:
+                date = self.__end_date
         return datetime(date.year(), date.month(), date.day())
+    
+    @property
+    def end_date(self) -> datetime|None:
+        date:QtCore.QDate|None = self.__end_date
+        if self.__end_date:
+            if self.__end_date < self.__start_date:
+                date = self.__start_date
+            
+        
+        if isinstance(date, QtCore.QDate):
+            return datetime(date.year(), date.month(), date.day())
+        return None
     
     def __init__(self, *, nav:object=object(), version:str="Beta"):
         self.__version:str = version
@@ -90,23 +105,32 @@ class Ui_Interface(QtWidgets.QMainWindow):
         self.Tela0_calendar = QtWidgets.QCalendarWidget(self.Tela0)
         self.Tela0_calendar.setGeometry(QtCore.QRect(50,175,500,225))
         self.Tela0_calendar.setVerticalHeaderFormat(QtWidgets.QCalendarWidget.NoVerticalHeader)
+        self.Tela0_calendar.setGridVisible(True)
+        self.Tela0_calendar.clicked[QtCore.QDate].connect(self.select_date)
+        
+        self.__start_date = self.Tela0_calendar.selectedDate()
+        self.__end_date = None
+
+        self.select_date(self.__start_date)
+        self.select_date(self.__start_date)
         
         #linha 4
         
         self.Tela0_bt_iniciarNavegador = QtWidgets.QPushButton(self.Tela0)
-        self.Tela0_bt_iniciarNavegador.setGeometry(QtCore.QRect(10,425,100,25))
+        self.Tela0_bt_iniciarNavegador.setGeometry(QtCore.QRect(10,425,150,25))
         self.Tela0_bt_iniciarNavegador.setObjectName("Tela0_bt_iniciar")
         
         self.Tela0_bt_iniciarExtract = QtWidgets.QPushButton(self.Tela0)
-        self.Tela0_bt_iniciarExtract.setGeometry(QtCore.QRect(125,425,100,25))
+        self.Tela0_bt_iniciarExtract.setGeometry(QtCore.QRect(175,425,150,25))
         self.Tela0_bt_iniciarExtract.setObjectName("Tela0_bt_iniciarExtract")
         self.Tela0_bt_iniciarExtract.setVisible(False)
         
-        self.Tela0_bt_teste = QtWidgets.QPushButton(self.Tela0)
-        self.Tela0_bt_teste.setGeometry(QtCore.QRect(300,425,100,25))
-        self.Tela0_bt_teste.setObjectName("Tela0_bt_iniciarExtract")
-        self.Tela0_bt_teste.setText("Teste")
-        self.Tela0_bt_teste.setVisible(False)
+        self.Tela0_bt_transformar = QtWidgets.QPushButton(self.Tela0)
+        self.Tela0_bt_transformar.setGeometry(QtCore.QRect(500,425,150,25))
+        self.Tela0_bt_transformar.setObjectName("Tela0_bt_transformar")
+        self.Tela0_bt_transformar.setText("Teste")
+        self.Tela0_bt_transformar.setVisible(True)
+        #self.Tela0_bt_transformar.clicked.connect(self.test)
         
         self.Telas.addWidget(self.Tela0)
         self.Telas.setCurrentIndex(0)
@@ -166,6 +190,7 @@ class Ui_Interface(QtWidgets.QMainWindow):
         
         self.Tela0_bt_iniciarNavegador.setText(_translate("Interface", "Abrir Navegador"))
         self.Tela0_bt_iniciarExtract.setText(_translate("Interface", "Iniciar Extração"))
+        self.Tela0_bt_transformar.setText(_translate("Interface", "Transformar Dados"))
         
         # self.menuFile.setTitle(_translate("Interface", "Arquivos"))
         # self.menuNew.setTitle(_translate("Interface", "New"))
@@ -199,8 +224,38 @@ class Ui_Interface(QtWidgets.QMainWindow):
         if a0:
             a0.accept()
             
-    
+    def select_date(self, date):
+        if not self.__start_date: #type: ignore
+            self.__start_date = date
+            self.highlight_date(self.__start_date, QtGui.QColor("green"))
+            #self.label.setText(f"Data inicial: {self.start_date.toString()}")
+        elif not self.__end_date:
+            self.__end_date = date
+            self.highlight_date(self.__end_date, QtGui.QColor("red"))
+            #self.label.setText(f"Data inicial: {self.start_date.toString()} \nData final: {self.end_date.toString()}")
+        else:
+            self.clear_highlight()
+            self.__start_date = date
+            self.__end_date = None
+            self.highlight_date(self.__start_date, QtGui.QColor("green"))
+            #self.label.setText(f"Data inicial: {self.start_date.toString()}")
+            
+    def highlight_date(self, date, color):
+        fmt = QtGui.QTextCharFormat()
+        fmt.setBackground(color)
+        self.Tela0_calendar.setDateTextFormat(date, fmt)
 
+    def clear_highlight(self):
+        fmt = QtGui.QTextCharFormat()
+        if self.__start_date:#type: ignore
+            self.Tela0_calendar.setDateTextFormat(self.__start_date, fmt)
+        if self.__end_date:
+            self.Tela0_calendar.setDateTextFormat(self.__end_date, fmt)
+
+    def test(self):
+        print(self.start_date, end=" Inicio\n")
+        print(self.end_date, end=" Final\n")
+        print("###################")
 
 if __name__ == "__main__":
     import sys

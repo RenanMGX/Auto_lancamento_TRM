@@ -67,6 +67,9 @@ class Controller:
         
         self.lancamento = File(view=self.view, file_tag='path_lancamento')
                         
+        print(self.movi_diaria.file_path)  
+        print(self.lancamento.file_path)    
+                    
         self.verificar_arquivos()   
         
         self.view.Tela0_bt_moviDiaria.clicked.connect(self.procurar_file_moviDiaria)
@@ -74,7 +77,7 @@ class Controller:
         self.view.Tela0_bt_iniciarNavegador.clicked.connect(self.pre_iniciar_navegador)
         self.view.Tela0_bt_iniciarExtract.clicked.connect(self.iniciar_extrac)
         
-        self.view.Tela0_bt_teste.clicked.connect(self.test) #<<<<<<<<< Teste
+        self.view.Tela0_bt_transformar.clicked.connect(self.transformarDadosDireto) #<<<<<<<<< Teste
     
     #@hide_show            
     def procurar_file_moviDiaria(self, *args, **kwargs) -> None:
@@ -109,21 +112,36 @@ class Controller:
     def iniciar_extrac(self, *args, **kwargs):
         if self.verificar_arquivos():
             try:
-                agora = datetime.now()
-                self.iniciar_navegador(alert=False)
-                self.bradesco.extract(date=self.view.date)
-                self.bradesco._exit()
+                if not kwargs.get("caminho"):
+                    agora = datetime.now()
+                    self.iniciar_navegador(alert=False)
+                    self.bradesco.extract(date=self.view.start_date)
+                    self.bradesco._exit()
+                    
+                    tempo_extracao = datetime.now() - agora
+                    
+                    file_path = os.path.join(self.__importantFilesPath, datetime.now().strftime('dados_extraidos-%Y%m%d%H%M%S-.xlsx'))
+                    pd.DataFrame(self.bradesco.dados).to_excel(file_path, index=False)
+                    
+                    self.transformarDados(file_path)   
+                    self.view.alerta(title='Concluido', description=f"Extração de dados Concluida em  \n  {tempo_extracao}    ")
+                    self.view.Tela0_bt_iniciarExtract.setVisible(False)
+                else:
+                    file_path = kwargs.get("caminho")
+                    if file_path:
+                        if file_path.endswith(".xlsx"):
+                            try:
+                                self.transformarDados(file_path)
+                            except Exception as err:
+                                self.view.alerta(title='Error', description=f"{type(err)}\n{str(err)}")
+                        else:
+                            self.view.alerta(title='Error', description="Arquivo selecionado não é um excel")
+                    else:
+                        self.view.alerta(title='Error', description="Arquivo selecionado não é valido")
                 
-                tempo_extracao = datetime.now() - agora
+                #self.transformarDados(r"R:\informe de rendimento trm - Amanda\Arquivos-Bot\dados_extraidos-05122024175002-.xlsx") 
                 
-                file_path = os.path.join(self.__importantFilesPath, datetime.now().strftime('dados_extraidos-%d%m%Y%H%M%S-.xlsx'))
-                pd.DataFrame(self.bradesco.dados).to_excel(file_path, index=False)
                 
-                self.transformarDados(file_path)   
-                
-                self.view.Tela0_bt_iniciarExtract.setVisible(False)
-                
-                self.view.alerta(title='Concluido', description=f"Extração de dados Concluida em  \n  {tempo_extracao}    ")
                 
                 return
                 
@@ -139,8 +157,15 @@ class Controller:
         TratarDados.transformar(
             path_movi_diaria=self.movi_diaria.file_path,
             path_lancamento=self.lancamento.file_path,
-            path_baseInvestimentos=path_baseInvestimentos
+            path_baseInvestimentos=path_baseInvestimentos,
+            start_date=self.view.start_date,
+            end_date=self.view.end_date
         )
+        
+    def transformarDadosDireto(self):
+        path = self.view.procurar_file()
+        if path:
+            self.iniciar_extrac(caminho=path)
         
     def test(self):
         options = QtWidgets.QFileDialog.Options()

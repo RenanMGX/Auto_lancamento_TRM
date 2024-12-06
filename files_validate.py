@@ -37,7 +37,8 @@ class File(AppConfig):
             except Exception as err:
                 self.remove(file_tag)
                 self.view.alerta(title='Alerta', description=f"{type(err)}\n{str(err)}")
-                
+        else:
+            self.file_path:str= "None"
         self.file_tag = file_tag
                 
                 
@@ -53,6 +54,7 @@ class File(AppConfig):
                         self.add(path_lancamento=path)
                         
                     self.Tela0_text.setText(path)
+                    self.file_path:str= path
                     #self.path_movi_diaria = path
                     return
         except Exception as err:

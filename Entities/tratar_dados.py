@@ -72,7 +72,9 @@ class TratarDados:
     def transformar(*,
         path_movi_diaria:str,
         path_lancamento:str,
-        path_baseInvestimentos:str
+        path_baseInvestimentos:str,
+        start_date:datetime,
+        end_date:datetime|None
     ):
         data_para_nome = lambda: datetime.now().strftime("%Y%m%d%H%M%S_")
         
@@ -90,14 +92,33 @@ class TratarDados:
         df_investimentos['Dt. Vencto'] = pd.to_datetime(df_investimentos['Dt. Vencto'], format="%d/%m/%Y", errors='coerce')
         df_investimentos['Dt. Resgate'] = pd.to_datetime(df_investimentos['Dt. Resgate'], format="%d/%m/%Y", errors='coerce')
         
+        #if end_date:
+            
         
         resgate = df_investimentos[df_investimentos['tipo'] == 'Resgate']
         resgate = resgate[['Empresa', 'Divisão', 'Dt. Aplicação', 'Dt. Vencto', 'Dt. Resgate', 'Taxa (%)', 'Vlr Princ']]
-
+        
         aplicacao = df_investimentos[df_investimentos['tipo'] == 'Aplicação']
         aplicacao['Parceiro'] = 600013
         aplicacao = aplicacao[['Parceiro', 'Empresa', 'Divisão', 'Dt. Aplicação', 'Dt. Vencto', 'Dt. Resgate', 'Taxa (%)', 'Vlr Princ']]
+        
+        if end_date:
+            resgate = resgate[
+                (resgate['Dt. Resgate'] >= start_date) &
+                (resgate['Dt. Resgate'] <= end_date) 
+            ]
+            aplicacao = aplicacao[
+                (aplicacao['Dt. Aplicação'] >= start_date) &
+                (aplicacao['Dt. Aplicação'] <= end_date) 
+            ]
+        else:
+            aplicacao = aplicacao[aplicacao['Dt. Aplicação'] == start_date]
+            resgate = resgate[resgate['Dt. Resgate'] == start_date]
+        
         path_lancamento_temp = os.path.join(os.getcwd(), f"{data_para_nome()}temporario_{os.path.basename(path_lancamento)}")
+        
+        
+        #import pdb;pdb.set_trace(header=P("transformar()").pdb_header)
         
         shutil.copy(path_lancamento, path_lancamento_temp)
         
@@ -154,5 +175,7 @@ if __name__ == "__main__":
     TratarDados.transformar(
         path_movi_diaria=r'R:/informe de rendimento trm - Amanda/#material/Movimentação diária.xlsm',
         path_lancamento=r'R:/informe de rendimento trm - Amanda/#material/Lançamentos - TRM Amanda Novo.. - .xlsm',
-        path_baseInvestimentos=r'R:\informe de rendimento trm - Amanda\#material\teste_5_.xlsx'        
+        path_baseInvestimentos=r'R:\informe de rendimento trm - Amanda\Arquivos-Bot\dados_extraidos-05122024175002-.xlsx',
+        start_date=datetime(2024,12,1),
+        end_date=datetime.now()
     )
