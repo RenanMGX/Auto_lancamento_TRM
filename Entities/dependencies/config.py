@@ -2,6 +2,7 @@ import configparser
 import os
 from typing import Literal, Dict
 import sys
+from getpass import getuser
 
 try:
     from Entities.dependencies.default_config import default as default_config
@@ -18,9 +19,9 @@ class Config:
     def config(self):
         return self.__config
     
-    def __init__(self, file_name:str=os.path.join(f"C:\\Users\\renan.oliveira\\.informe_rendimento_trm", "config.init")):
+    def __init__(self, file_name:str=os.path.join(f"C:\\Users\\{getuser()}\\.informe_rendimento_trm", "config.init")):
         self.__file_name:str = file_name
-        if not os.path.dirname(self.file_name):
+        if not os.path.exists(os.path.dirname(self.file_name)):
             os.makedirs(os.path.dirname(self.file_name))
             #raise Exception(f"o caminho {os.path.dirname(self.file_name)} não é valido!")
         if not os.path.exists(self.file_name):

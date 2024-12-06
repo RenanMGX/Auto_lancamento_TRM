@@ -17,10 +17,10 @@ class AppConfig:
                 os.makedirs(path)
             
             path = os.path.join(path, file)
+            self.__path = path
             if not os.path.exists(path):
                 self.__save({})
                     
-            self.__path = path
             
         else:
             raise Exception(f"caminho '{path}' não encontrado!")

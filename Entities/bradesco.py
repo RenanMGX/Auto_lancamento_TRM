@@ -435,7 +435,7 @@ class Bradesco:
             self.Nav.switch_to.window(self.Nav.window_handles[0])
         
         try:
-            self.Nav.find_element(By.ID, 'botaoSair')
+            self.Nav.find_element(By.ID, 'botaoSair', timeout=2)
         except exceptions.ElementNotFound:
             raise exceptions.LoginRequired("É necessario efetuar o login primeiro!")
         

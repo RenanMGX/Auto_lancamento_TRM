@@ -10,8 +10,14 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from typing import Literal
+from datetime import datetime
     
 class Ui_Interface(QtWidgets.QMainWindow):
+    @property
+    def date(self) -> datetime:
+        date = self.Tela0_calendar.selectedDate()
+        return datetime(date.year(), date.month(), date.day())
+    
     def __init__(self, *, nav:object=object(), version:str="Beta"):
         self.__version:str = version
         self.__nav = nav
@@ -79,7 +85,13 @@ class Ui_Interface(QtWidgets.QMainWindow):
         self.Tela0_text_lancamento.setReadOnly(True)
         ##
         
-        #linha 3
+        # linha 3
+        
+        self.Tela0_calendar = QtWidgets.QCalendarWidget(self.Tela0)
+        self.Tela0_calendar.setGeometry(QtCore.QRect(50,175,500,225))
+        self.Tela0_calendar.setVerticalHeaderFormat(QtWidgets.QCalendarWidget.NoVerticalHeader)
+        
+        #linha 4
         
         self.Tela0_bt_iniciarNavegador = QtWidgets.QPushButton(self.Tela0)
         self.Tela0_bt_iniciarNavegador.setGeometry(QtCore.QRect(10,425,100,25))
@@ -94,7 +106,7 @@ class Ui_Interface(QtWidgets.QMainWindow):
         self.Tela0_bt_teste.setGeometry(QtCore.QRect(300,425,100,25))
         self.Tela0_bt_teste.setObjectName("Tela0_bt_iniciarExtract")
         self.Tela0_bt_teste.setText("Teste")
-        #self.Tela0_bt_teste.setVisible(False)
+        self.Tela0_bt_teste.setVisible(False)
         
         self.Telas.addWidget(self.Tela0)
         self.Telas.setCurrentIndex(0)
@@ -186,6 +198,7 @@ class Ui_Interface(QtWidgets.QMainWindow):
             pass
         if a0:
             a0.accept()
+            
     
 
 
