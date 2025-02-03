@@ -97,10 +97,12 @@ class TratarDados:
         
         resgate = df_investimentos[df_investimentos['tipo'] == 'Resgate']
         resgate = resgate[['Empresa', 'Divisão', 'Dt. Aplicação', 'Dt. Vencto', 'Dt. Resgate', 'Taxa (%)', 'Vlr Princ']]
+        resgate = resgate.drop_duplicates()
         
         aplicacao = df_investimentos[df_investimentos['tipo'] == 'Aplicação']
         aplicacao['Parceiro'] = 600013
         aplicacao = aplicacao[['Parceiro', 'Empresa', 'Divisão', 'Dt. Aplicação', 'Dt. Vencto', 'Dt. Resgate', 'Taxa (%)', 'Vlr Princ']]
+        aplicacao = aplicacao.drop_duplicates()
         
         if end_date:
             resgate = resgate[
